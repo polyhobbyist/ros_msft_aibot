@@ -1,31 +1,44 @@
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.5.0)
 project(ros_msft_aibot)
 
-find_package(catkin REQUIRED COMPONENTS
-  roscpp
+# Default to C++14
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 14)
+endif()
+
+if(MSVC)
+  add_compile_options(/wd4251 /wd4275)
+  add_definitions(-D_USE_MATH_DEFINES)
+endif()
+
+find_package(ament_cmake REQUIRED)
+find_package(ament_index_cpp REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(visualization_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+
+add_executable(${PROJECT_NAME}
+  src/main.cpp
+)
+
+ament_target_dependencies(${PROJECT_NAME}
+  ament_index_cpp
+  rclcpp
   std_msgs
+  sensor_msgs
   visualization_msgs
+  geometry_msgs
 )
 
-# find_package(Boost REQUIRED COMPONENTS system)
+install(TARGETS
+  ${PROJECT_NAME}
+  DESTINATION lib/${PROJECT_NAME})
 
-
-catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES ros_msft_aibot
-#  CATKIN_DEPENDS roscpp std_msgs
-#  DEPENDS system_lib
+install(DIRECTORY
+  launch
+  DESTINATION share/${PROJECT_NAME}/
 )
 
-include_directories(
-# include
-  ${catkin_INCLUDE_DIRS}
-)
-
-add_executable(${PROJECT_NAME}_node src/main.cpp)
-
-add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
-target_link_libraries(${PROJECT_NAME}_node
-   ${catkin_LIBRARIES}
-)
+ament_package()

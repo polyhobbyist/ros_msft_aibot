@@ -1,49 +1,60 @@
 #include <math.h>
-#include <ros/ros.h>
-#include <tf/tf.h>
-#include <tf/transform_datatypes.h>
 #include <angles/angles.h>
-#include <geometry_msgs/Pose.h>
-#include <geometry_msgs/Twist.h>
-#include <visualization_msgs/Marker.h>
-#include <visualization_msgs/MarkerArray.h>
-float kAngleScale = 0.5f;
-float kCameraPixelWidth = 416.0f;
-float kFOV = 70.0f;
-float kDegreePerCameraPixel = kFOV / kCameraPixelWidth;
+#include <rclcpp/rclcpp.hpp>
 
-float targetYaw = 0.0f;
+#include <geometry_msgs/msg/pose.hpp>
+#include <geometry_msgs/msg/twist.hpp>
+#include <visualization_msgs/msg/marker.hpp>
 
-ros::Subscriber markerSub;
-ros::Publisher velocityPub;
+double kAngleScale = 0.5;
+double kCameraPixelWidth = 416.0;
+double kFOV = 70.0;
+double kDegreePerCameraPixel = kFOV / kCameraPixelWidth;
+double targetYaw = 0.0;
 
-void markerCallback(const visualization_msgs::MarkerArray::ConstPtr& msg)
+using std::placeholders::_1;
+
+class FollowMeNode : public rclcpp::Node
 {
-    targetYaw = 0.0f;
+  public:
+    FollowMeNode()
+    : Node("ros_msft_aibot")
+    {
+      markerSub = this->create_subscription<visualization_msgs::msg::Marker>(
+        "visual_markers", 10, std::bind(&FollowMeNode::marker_callback, this, _1));
 
-	for (auto &marker : msg->markers)
-	{
-        float degree = (marker.pose.position.x * kDegreePerCameraPixel) - (kFOV / 2.0f);
+      velocityPub =  this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 1);
+    }
 
-        targetYaw = (float)angles::from_degrees(-degree);
-	}
+  private:
+    void marker_callback(const visualization_msgs::msg::Marker::SharedPtr msg) const
+    {
+        targetYaw = 0.0f;
 
-    ROS_INFO("Turning Towards %f", targetYaw);
+        double degree = (msg->pose.position.x * kDegreePerCameraPixel) - (kFOV / 2.0f);
 
-	geometry_msgs::Twist vel_msg;
-	vel_msg.angular.z = kAngleScale * targetYaw;
-	velocityPub.publish(vel_msg);
-}
+        targetYaw = angles::from_degrees(-degree);
+
+        RCLCPP_INFO(this->get_logger(), "Turning Towards %f", targetYaw);
+
+        geometry_msgs::msg::Twist vel_msg;
+        vel_msg.angular.z = kAngleScale * targetYaw;
+        velocityPub->publish(vel_msg);
+    }
+
+
+    rclcpp::Subscription<visualization_msgs::msg::Marker>::SharedPtr markerSub;
+    rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr velocityPub;
+};
+
 
 int main(int argc, char** argv)
 {
-	ros::init(argc, argv, "ai_bot");
-	ros::NodeHandle n;
+    rclcpp::init(argc, argv);
+    rclcpp::Node::SharedPtr node = std::make_shared<FollowMeNode>();
 
-	markerSub = n.subscribe("tracked_objects", 10, markerCallback);
-	velocityPub = n.advertise<geometry_msgs::Twist>("cmd_vel", 10);
+    rclcpp::spin(node);
+    rclcpp::shutdown();
 
-	ros::spin();
-
-	return 0;        
+    return 0;        
 }
