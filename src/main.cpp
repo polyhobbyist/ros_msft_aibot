@@ -1,5 +1,5 @@
 #include <math.h>
-#include <angles/angles.h>
+#include <cmath>
 #include <rclcpp/rclcpp.hpp>
 
 #include <geometry_msgs/msg/pose.hpp>
@@ -33,7 +33,7 @@ class FollowMeNode : public rclcpp::Node
 
         double degree = (msg->pose.position.x * kDegreePerCameraPixel) - (kFOV / 2.0f);
 
-        targetYaw = angles::from_degrees(-degree);
+        targetYaw = -degree * M_PI / 180.0;
 
         RCLCPP_INFO(this->get_logger(), "Turning Towards %f", targetYaw);
 

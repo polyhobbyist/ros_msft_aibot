@@ -18,6 +18,7 @@ find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
 
 add_executable(${PROJECT_NAME}
   src/main.cpp
